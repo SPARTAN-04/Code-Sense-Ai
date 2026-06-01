@@ -10,6 +10,7 @@ Code Sense AI is a Node.js service for analyzing repositories and pull requests.
 - Rule engine checks for backend, frontend, and general code quality patterns.
 - RAG indexing and semantic search over repository files.
 - Gemini-based AI review summaries and remediation suggestions.
+- Adaptive LangGraph-based Phase 6 orchestration with planner, routing, reflection, and specialized review agents.
 
 ## Tech Stack
 
@@ -178,6 +179,20 @@ Phase 5 AI review:
 npm run phase5:local -- <repository-path> <changed-file> [more-changed-files] [--with-rag]
 ```
 
+Phase 6 LangGraph orchestration:
+
+```bash
+npm run phase6:local -- <repository-path> <changed-file> [more-changed-files] [--with-rag] [--skip-ai] [--json]
+```
+
+Direct Node invocation avoids npm flag warnings:
+
+```bash
+node src/scripts/analyze-local-repo-with-langgraph.js <repository-path> <changed-file> [--skip-ai] [--json]
+```
+
+See `docs/phase6-langgraph-orchestration.md` and `docs/adaptive-autonomous-orchestration.md` for the full architecture walkthrough.
+
 ## RAG And ChromaDB
 
 Start ChromaDB locally:
@@ -215,7 +230,7 @@ npm run phase3:search -- <repository-path> "Where is request validation done?"
 https://<your-tunnel-url>/api/webhooks/github
 ```
 
-The server handles `ping`, `installation`, `installation_repositories`, and `pull_request` events. Pull request events trigger repository intelligence, rule validation, optional semantic context, and optional AI review.
+The server handles `ping`, `installation`, `installation_repositories`, and `pull_request` events. Pull request events trigger the Phase 6 LangGraph orchestrator, which coordinates dependency analysis, optional semantic context, rule validation, AI review, and risk summary generation.
 
 ## Notes
 

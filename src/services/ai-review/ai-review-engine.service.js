@@ -22,6 +22,10 @@ class AIReviewEngineService {
     changedFiles,
     context,
     validation,
+    reviewDepth,
+    plannerDecision,
+    executionPlan,
+    architectureAnalysis,
   }) {
     this.validateConfiguration();
 
@@ -33,6 +37,10 @@ class AIReviewEngineService {
       changedFiles,
       context,
       validation,
+      reviewDepth,
+      plannerDecision,
+      executionPlan,
+      architectureAnalysis,
     });
     const prompt = promptBuilderService.buildPrompt(contextBundle);
     const geminiResponse = await geminiAIService.generateStructuredReview(prompt);

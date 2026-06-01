@@ -1,9 +1,10 @@
   import { githubService } from '../services/github.service.js';
-  import { repositoryIntelligenceService } from '../services/repository/repository-intelligence.service.js';
+  import { prReviewOrchestratorService } from '../services/orchestration/pr-review-orchestrator.service.js';
   import { logPhase2Report } from '../utils/phase2-report.logger.js';
   import { logPhase3Report } from '../utils/phase3-report.logger.js';
   import { logPhase4Report } from '../utils/phase4-report.logger.js';
   import { logPhase5Report } from '../utils/phase5-report.logger.js';
+  import { logPhase6Report } from '../utils/phase6-report.logger.js';
 
   export const handleGithubWebhook = async (req, res) => {
     console.log('\n================ GITHUB WEBHOOK RECEIVED ================');
@@ -119,9 +120,9 @@
         );
       });
 
-      console.log('\nStarting Phase 2 repository intelligence analysis...');
+      console.log('\nStarting Phase 6 LangGraph orchestration...');
 
-      const phase2Report = await repositoryIntelligenceService.analyzePullRequest({
+      const phase6Report = await prReviewOrchestratorService.reviewPullRequest({
         installationId,
         owner,
         repo,
@@ -132,10 +133,11 @@
         failOnAiReviewError: false,
       });
 
-      logPhase2Report(phase2Report);
-      logPhase3Report(phase2Report);
-      logPhase4Report(phase2Report);
-      logPhase5Report(phase2Report);
+      logPhase2Report(phase6Report);
+      logPhase3Report(phase6Report);
+      logPhase4Report(phase6Report);
+      logPhase5Report(phase6Report);
+      logPhase6Report(phase6Report);
     } catch (error) {
       console.error('\nError processing pull request');
       console.error(error);

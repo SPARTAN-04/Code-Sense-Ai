@@ -16,7 +16,17 @@ class RuleEngineService {
     impact,
     changedFiles,
     includeAffectedModules = ruleEngineConfig.includeAffectedModules,
+    includedRuleCategories = null,
+    excludedRuleCategories = [],
+    includedRuleIds = null,
+    excludedRuleIds = [],
   }) {
+    const activeRules = this.resolveActiveRules({
+      includedRuleCategories,
+      excludedRuleCategories,
+      includedRuleIds,
+      excludedRuleIds,
+    });
     const { targets, skippedTargets } = this.buildValidationTargets({
       scanResult,
       graph,
@@ -43,7 +53,7 @@ class RuleEngineService {
         parseError: parseResult.parseError,
       });
 
-      for (const rule of ruleRegistry) {
+      for (const rule of activeRules) {
         if (rule.appliesTo && !rule.appliesTo(fileContext)) {
           continue;
         }
@@ -72,11 +82,43 @@ class RuleEngineService {
 
     return validationReportService.buildReport({
       repository,
-      rules: ruleRegistry,
+      rules: activeRules,
       targets,
       skippedTargets,
       findings,
       ruleErrors,
+    });
+  }
+
+  resolveActiveRules({
+    includedRuleCategories,
+    excludedRuleCategories,
+    includedRuleIds,
+    excludedRuleIds,
+  }) {
+    const includedCategorySet = Array.isArray(includedRuleCategories)
+      ? new Set(includedRuleCategories)
+      : null;
+    const excludedCategorySet = new Set(excludedRuleCategories || []);
+    const includedRuleIdSet = Array.isArray(includedRuleIds)
+      ? new Set(includedRuleIds)
+      : null;
+    const excludedRuleIdSet = new Set(excludedRuleIds || []);
+
+    return ruleRegistry.filter(rule => {
+      if (includedCategorySet && !includedCategorySet.has(rule.category)) {
+        return false;
+      }
+
+      if (excludedCategorySet.has(rule.category)) {
+        return false;
+      }
+
+      if (includedRuleIdSet && !includedRuleIdSet.has(rule.id)) {
+        return false;
+      }
+
+      return !excludedRuleIdSet.has(rule.id);
     });
   }
 

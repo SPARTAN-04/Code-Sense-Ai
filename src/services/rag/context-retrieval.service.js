@@ -12,6 +12,9 @@ class ContextRetrievalService {
     impact,
     changedFiles,
     ensureIndexed = true,
+    resetIndex = true,
+    retrievalMode = 'NORMAL',
+    maxPerChangedFile = ragConfig.retrieval.maxPerChangedFile,
   }) {
     const repoKey = buildRepositoryKey(repository);
     const indexing = ensureIndexed
@@ -19,10 +22,11 @@ class ContextRetrievalService {
           repository,
           scanResult,
           graph,
-          reset: true,
+          reset: resetIndex,
         })
       : {
           repoKey,
+          skipped: true,
         };
 
     const changedFileContexts = [];
@@ -49,7 +53,7 @@ class ContextRetrievalService {
       const semanticResults = await semanticRetrievalService.searchRepository({
         repoKey,
         query,
-        limit: ragConfig.retrieval.maxPerChangedFile * 2,
+        limit: maxPerChangedFile * 2,
         excludePaths: [filePath],
       });
 
@@ -57,6 +61,7 @@ class ContextRetrievalService {
         results: semanticResults,
         structuralContext,
         changedFileImpact,
+        maxPerChangedFile,
       });
 
       changedFileContexts.push({
@@ -71,6 +76,7 @@ class ContextRetrievalService {
     return {
       phase: 'phase-3-context-retrieval',
       repositoryKey: repoKey,
+      retrievalMode,
       indexing,
       changedFiles: changedFileContexts,
       summary: buildSummary(changedFileContexts),
@@ -120,7 +126,11 @@ function buildChangedFileQuery({
     .join('\n\n');
 }
 
-function rankAndTrimResults({ results, structuralContext }) {
+function rankAndTrimResults({
+  results,
+  structuralContext,
+  maxPerChangedFile,
+}) {
   const directDependencySet = new Set(structuralContext.directDependencies);
   const directDependentSet = new Set(structuralContext.directDependents);
   const affectedModuleSet = new Set(
@@ -158,7 +168,7 @@ function rankAndTrimResults({ results, structuralContext }) {
       };
     })
     .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, ragConfig.retrieval.maxPerChangedFile);
+    .slice(0, maxPerChangedFile);
 }
 
 function buildSummary(changedFileContexts) {

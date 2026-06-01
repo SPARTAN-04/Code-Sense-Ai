@@ -13,6 +13,10 @@ class ContextBundleBuilderService {
     changedFiles,
     context,
     validation,
+    reviewDepth,
+    plannerDecision,
+    executionPlan,
+    architectureAnalysis,
   }) {
     const fileByPath = new Map(
       (scanResult?.files || []).map(file => [normalizeRepoPath(file.path), file])
@@ -60,6 +64,12 @@ class ContextBundleBuilderService {
       repository,
       reviewIntent:
         'Architecture-aware MERN pull request review using dependency, RAG, and deterministic rule context.',
+      reviewStrategy: buildReviewStrategy({
+        reviewDepth,
+        plannerDecision,
+        executionPlan,
+        architectureAnalysis,
+      }),
       reviewScope: {
         changedFileCount: changedFileContexts.length,
         affectedModuleCount: impact?.summary?.affectedModuleCount || 0,
@@ -89,6 +99,23 @@ class ContextBundleBuilderService {
       ruleEngine,
     };
   }
+}
+
+function buildReviewStrategy({
+  reviewDepth,
+  plannerDecision,
+  executionPlan,
+  architectureAnalysis,
+}) {
+  return {
+    reviewDepth: reviewDepth || plannerDecision?.reviewDepth || 'STANDARD',
+    plannerRiskLevel: plannerDecision?.riskLevel || executionPlan?.riskLevel || null,
+    plannerRiskScore: plannerDecision?.riskScore || executionPlan?.riskScore || null,
+    requiredAgents: executionPlan?.requiredAgents || [],
+    executionStrategy: executionPlan?.strategy || null,
+    reasonCodes: executionPlan?.reasonCodes || [],
+    architectureAnalysisAvailable: Boolean(architectureAnalysis),
+  };
 }
 
 function buildChangedFileContext({
