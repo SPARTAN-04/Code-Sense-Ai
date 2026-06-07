@@ -12,6 +12,8 @@ export const WORKFLOW_NODES = Object.freeze({
   ruleEngine: 'rule_engine_agent',
   review: 'review_agent',
   architecture: 'architecture_agent',
+  riskIntelligence: 'risk_intelligence_agent',
+  smartReview: 'smart_review_agent',
   riskSummary: 'risk_summary_agent',
 });
 
@@ -27,13 +29,13 @@ export const routingEngine = {
 
     if (stage === 'afterArchitecture') {
       return {
-        nextAgent: WORKFLOW_NODES.riskSummary,
+        nextAgent: WORKFLOW_NODES.riskIntelligence,
         reason: 'architecture analysis completed',
       };
     }
 
     return {
-      nextAgent: WORKFLOW_NODES.riskSummary,
+      nextAgent: WORKFLOW_NODES.riskIntelligence,
       reason: 'fallback route',
     };
   },
@@ -88,7 +90,7 @@ function decideAfterReview(state) {
   }
 
   return {
-    nextAgent: WORKFLOW_NODES.riskSummary,
-    reason: 'review confidence and risk profile are sufficient for summary',
+    nextAgent: WORKFLOW_NODES.riskIntelligence,
+    reason: 'review confidence and risk profile are sufficient for final intelligence',
   };
 }

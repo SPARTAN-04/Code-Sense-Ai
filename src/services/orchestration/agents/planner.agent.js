@@ -49,6 +49,7 @@ export async function plannerAgent(state) {
     plannerDecision,
     executionPlan,
     riskScore,
+    routingRiskScore: riskScore,
     reviewDepth,
     rulePolicy: executionPlan.rulePolicy,
     executionMetadata: {

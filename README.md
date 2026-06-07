@@ -11,6 +11,7 @@ Code Sense AI is a Node.js service for analyzing repositories and pull requests.
 - RAG indexing and semantic search over repository files.
 - Gemini-based AI review summaries and remediation suggestions.
 - Adaptive LangGraph-based Phase 6 orchestration with planner, routing, reflection, and specialized review agents.
+- React SaaS dashboard with review history, analytics, architecture insights, and dependency visualization.
 
 ## Tech Stack
 
@@ -102,6 +103,15 @@ Start the production-style server:
 npm start
 ```
 
+Start the Phase 11 dashboard:
+
+```bash
+npm run frontend:dev
+```
+
+The frontend runs at `http://localhost:5173`. Set `DASHBOARD_DEMO_MODE=true` for
+an immediately usable local workspace without MongoDB or GitHub OAuth.
+
 Health check:
 
 ```text
@@ -192,6 +202,8 @@ node src/scripts/analyze-local-repo-with-langgraph.js <repository-path> <changed
 ```
 
 See `docs/phase6-langgraph-orchestration.md` and `docs/adaptive-autonomous-orchestration.md` for the full architecture walkthrough.
+See `docs/phase11-dashboard-saas-experience.md` for dashboard architecture,
+authentication flow, API routes, and frontend setup.
 
 ## RAG And ChromaDB
 

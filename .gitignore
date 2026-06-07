@@ -17,6 +17,7 @@ private-key.pem
 
 # Local/generated data
 .chroma/
+chroma/
 coverage/
 dist/
 build/

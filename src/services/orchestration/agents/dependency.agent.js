@@ -59,6 +59,7 @@ export async function dependencyAgent(state) {
     routeProfile,
     rulePolicy: routeProfile.rulePolicy,
     riskScore,
+    routingRiskScore: riskScore,
     reviewDepth: executionPlan.reviewDepth,
     executionPlan,
     executionMetadata: {
@@ -121,9 +122,13 @@ async function scanRepository({ repository, scanMode }) {
       scanResult,
       reportRepository: {
         source: 'github',
+        installationId: repository.installationId,
         owner: repository.owner,
         repo: repository.repo,
+        pullNumber: repository.pullNumber,
         ref: repository.ref,
+        headSha: repository.headSha || repository.ref,
+        pullRequestUrl: repository.pullRequestUrl,
       },
     };
   }

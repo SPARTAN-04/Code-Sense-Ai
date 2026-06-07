@@ -1,4 +1,13 @@
   import { githubService } from '../services/github.service.js';
+  import { buildReviewOptions } from '../services/dashboard/review-options.util.js';
+  import {
+    completeReviewJob,
+    failReviewJob,
+    startReviewJob,
+    updateReviewJob,
+  } from '../services/dashboard/review-job.store.js';
+  import { recordWebhookDelivery } from '../services/dashboard/webhook-delivery.store.js';
+  import { reviewHistoryService } from '../services/history/reviewHistoryService.js';
   import { prReviewOrchestratorService } from '../services/orchestration/pr-review-orchestrator.service.js';
   import { logPhase2Report } from '../utils/phase2-report.logger.js';
   import { logPhase3Report } from '../utils/phase3-report.logger.js';
@@ -13,9 +22,17 @@
       const event = req.headers['x-github-event'];
       const deliveryId = req.headers['x-github-delivery'];
       const payload = req.body;
+      const repositoryName = payload.repository?.full_name || null;
 
       console.log(`Event Type: ${event}`);
       console.log(`Delivery ID: ${deliveryId}`);
+      await recordWebhookDelivery({
+        deliveryId,
+        event,
+        action: payload.action,
+        repository: repositoryName,
+        status: 'received',
+      });
 
       if (event === 'ping') {
         console.log('GitHub webhook connected successfully.');
@@ -71,11 +88,13 @@
           }
 
           processPullRequest({
+            deliveryId,
             installationId,
             owner: repo.owner.login,
             repo: repo.name,
             pullNumber: pr.number,
             headSha: pr.head?.sha,
+            title: pr.title,
           }).catch(error => {
             console.error('Async PR processing failed:', error);
           });
@@ -96,14 +115,18 @@
   };
 
   async function processPullRequest({
+    deliveryId,
     installationId,
     owner,
     repo,
     pullNumber,
     headSha,
+    title,
   }) {
+    const job = startReviewJob({ owner, repo, pullNumber, title, deliveryId });
     try {
       console.log(`\nFetching changed files for ${owner}/${repo}#${pullNumber}`);
+      updateReviewJob(job.id, { stage: 'fetching-files', progress: 15 });
 
       const files = await githubService.getPRFiles(
         installationId,
@@ -121,25 +144,112 @@
       });
 
       console.log('\nStarting Phase 6 LangGraph orchestration...');
+      updateReviewJob(job.id, { stage: 'analyzing', progress: 35 });
 
       const phase6Report = await prReviewOrchestratorService.reviewPullRequest({
         installationId,
         owner,
         repo,
+        pullNumber,
         ref: headSha,
         changedFiles: files,
-        includeRuleValidation: true,
-        includeAiReview: true,
-        failOnAiReviewError: false,
+        ...buildReviewOptions(),
       });
+      updateReviewJob(job.id, { stage: 'persisting', progress: 85 });
 
       logPhase2Report(phase6Report);
       logPhase3Report(phase6Report);
       logPhase4Report(phase6Report);
       logPhase5Report(phase6Report);
       logPhase6Report(phase6Report);
+      const history = await persistReviewReport({
+        phase6Report,
+        installationId,
+        owner,
+        repo,
+        pullNumber,
+        headSha,
+        changedFiles: files,
+      });
+      completeReviewJob(job.id, { reviewHistoryId: history?.id || phase6Report.reviewHistoryId || null });
+      await recordWebhookDelivery({
+        deliveryId,
+        event: 'pull_request',
+        action: 'processed',
+        repository: `${owner}/${repo}`,
+        status: 'completed',
+        message: history?.id ? `Review history ${history.id}` : 'Review completed',
+      });
     } catch (error) {
+      failReviewJob(job.id, error);
+      await recordWebhookDelivery({
+        deliveryId,
+        event: 'pull_request',
+        action: 'processed',
+        repository: `${owner}/${repo}`,
+        status: 'failed',
+        message: error.message,
+      });
       console.error('\nError processing pull request');
       console.error(error);
     }
+  }
+
+  async function persistReviewReport({
+    phase6Report,
+    installationId,
+    owner,
+    repo,
+    pullNumber,
+    headSha,
+    changedFiles,
+  }) {
+    if (phase6Report.reviewHistoryId) {
+      console.log(`Review history already recorded: ${phase6Report.reviewHistoryId}`);
+      return { id: phase6Report.reviewHistoryId, skipped: false };
+    }
+
+    const summary = phase6Report.reviewSummary || {};
+    const history = await reviewHistoryService.recordReviewHistory({
+      prNumber: pullNumber,
+      repository: `${owner}/${repo}`,
+      riskScore: phase6Report.riskScore ?? summary.riskScore ?? 0,
+      confidence: phase6Report.confidence ?? summary.confidence ?? 0,
+      severity: phase6Report.severity || summary.severity || 'LOW',
+      summary,
+      details: {
+        title: summary.headline || `PR #${pullNumber}`,
+        prUrl: `https://github.com/${owner}/${repo}/pull/${pullNumber}`,
+        installationId,
+        headSha: headSha || null,
+        riskLevel: phase6Report.riskLevel || summary.riskLevel || phase6Report.severity,
+        reviewMode: phase6Report.reviewMode || summary.reviewMode || null,
+        affectedSystems: phase6Report.affectedSystems || summary.affectedSystems || [],
+        architectureImpact: phase6Report.architectureImpact || 'NOT_ANALYZED',
+        architectureFindings: summary.topFindings || [],
+        criticalFiles: phase6Report.criticalFiles || [],
+        suggestedChanges:
+          phase6Report.suggestedChanges ||
+          summary.suggestedChanges ||
+          summary.suggestedNextSteps ||
+          [],
+        hotspots: phase6Report.hotspots || [],
+        smartReview: phase6Report.smartReview || null,
+        dependencyGraph: phase6Report.graph || { nodes: [], edges: [] },
+        architectureAnalysis: phase6Report.architectureAnalysis || null,
+        changedFiles,
+        notificationStatus: phase6Report.notificationStatus || null,
+        githubPublicationStatus: phase6Report.githubPublicationStatus || null,
+        checkRunStatus: phase6Report.checkRunStatus || null,
+        readableReport: phase6Report.aiReview?.readableReport || null,
+        aiReview: phase6Report.aiReview || null,
+      },
+    });
+
+    console.log(
+      history.skipped
+        ? `Review history skipped: ${history.reason}`
+        : `Review history recorded: ${history.id}`
+    );
+    return history;
   }

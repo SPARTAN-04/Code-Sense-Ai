@@ -11,6 +11,7 @@ class PRReviewOrchestratorService {
     installationId,
     owner,
     repo,
+    pullNumber,
     ref,
     changedFiles,
     includeSemanticContext,
@@ -19,6 +20,8 @@ class PRReviewOrchestratorService {
     includeAiReview,
     failOnAiReviewError,
     ensureContextIndexed,
+    publishGithubReview,
+    publishNotifications,
     debug,
   }) {
     return this.invoke({
@@ -27,7 +30,9 @@ class PRReviewOrchestratorService {
         installationId,
         owner,
         repo,
+        pullNumber,
         ref,
+        headSha: ref,
       },
       changedFiles,
       options: removeUndefinedValues({
@@ -37,6 +42,8 @@ class PRReviewOrchestratorService {
         includeAiReview,
         failOnAiReviewError,
         ensureContextIndexed,
+        publishGithubReview,
+        publishNotifications,
         debug,
       }),
     });
@@ -51,6 +58,8 @@ class PRReviewOrchestratorService {
     includeAiReview,
     failOnAiReviewError,
     ensureContextIndexed,
+    publishGithubReview,
+    publishNotifications,
     debug,
   }) {
     return this.invoke({
@@ -66,6 +75,8 @@ class PRReviewOrchestratorService {
         includeAiReview,
         failOnAiReviewError,
         ensureContextIndexed,
+        publishGithubReview,
+        publishNotifications,
         debug,
       }),
     });

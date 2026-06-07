@@ -12,7 +12,8 @@ export function logPhase6Report(report) {
   console.log(`Workflow status: ${report.status}`);
   console.log(`Review depth: ${summary.reviewDepth || report.reviewDepth || 'STANDARD'}`);
   console.log(`Review mode: ${summary.reviewMode}`);
-  console.log(`Risk score: ${summary.riskScore ?? report.riskScore ?? 0}`);
+  console.log(`Risk score: ${summary.riskScore ?? report.riskScore ?? 0} / 10`);
+  console.log(`Risk level: ${summary.riskLevel || report.riskLevel || 'LOW'}`);
   console.log(`Final severity: ${summary.severity}`);
   console.log(`Confidence: ${summary.confidence}%`);
   console.log(`Total duration: ${metadata.totalDurationMs || 0}ms`);
@@ -57,6 +58,49 @@ export function logPhase6Report(report) {
     );
   }
 
+  if (report.smartReview) {
+    console.log('\nSmart review allocation:');
+    console.log(`- PR size: ${report.smartReview.prSize}`);
+    console.log(`- Deep review files: ${report.reviewBudget?.counts?.deep || 0}`);
+    console.log(`- Standard review files: ${report.reviewBudget?.counts?.standard || 0}`);
+    console.log(`- Light review files: ${report.reviewBudget?.counts?.light || 0}`);
+  }
+
+  if (report.criticalFiles?.length) {
+    console.log('\nCritical files:');
+    report.criticalFiles.slice(0, 10).forEach(file => {
+      console.log(`- ${file.file} (${file.criticality}, score ${file.score})`);
+    });
+  }
+
+  if (report.hotspots?.length) {
+    console.log('\nArchitectural hotspots:');
+    report.hotspots.slice(0, 10).forEach(hotspot => {
+      console.log(
+        `- ${hotspot.file} (${hotspot.impactLevel}): ${hotspot.reasons.join(', ')}`
+      );
+    });
+  }
+
+  if (report.githubPublicationStatus) {
+    console.log('\nGitHub publication:');
+    console.log(`- Status: ${report.githubPublicationStatus}`);
+
+    if (report.checkRunStatus) {
+      console.log(`- Check run: ${report.checkRunStatus}`);
+    }
+
+    if (report.reviewHistoryId) {
+      console.log(`- Review history ID: ${report.reviewHistoryId}`);
+    }
+
+    if (report.githubPublicationError) {
+      console.log(
+        `- Error: ${report.githubPublicationError.code || 'GITHUB_ERROR'} - ${report.githubPublicationError.message}`
+      );
+    }
+  }
+
   console.log('\nAgent execution:');
   const agentRuns = metadata.agentRuns?.length
     ? metadata.agentRuns
@@ -80,6 +124,17 @@ export function logPhase6Report(report) {
 
   console.log('\nSummary:');
   console.log(summary.headline);
+
+  if (summary.riskExplanation) {
+    console.log(`\nRisk explanation:\n${summary.riskExplanation}`);
+  }
+
+  if (summary.contributingFactors?.length) {
+    console.log('\nContributing factors:');
+    summary.contributingFactors.forEach(factor => {
+      console.log(`- ${factor}`);
+    });
+  }
 
   console.log('\nCounts:');
   Object.entries(summary.counts || {}).forEach(([name, count]) => {

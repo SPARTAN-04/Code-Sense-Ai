@@ -11,6 +11,8 @@ export const ORCHESTRATION_AGENTS = Object.freeze({
   rule: 'ruleAgent',
   review: 'reviewAgent',
   architecture: 'architectureAgent',
+  riskIntelligence: 'riskIntelligenceAgent',
+  smartReview: 'smartReviewAgent',
   summary: 'riskSummaryAgent',
 });
 
@@ -24,6 +26,8 @@ export function buildExecutionPlan({
   const requiredAgents = [
     ORCHESTRATION_AGENTS.dependency,
     ORCHESTRATION_AGENTS.review,
+    ORCHESTRATION_AGENTS.riskIntelligence,
+    ORCHESTRATION_AGENTS.smartReview,
     ORCHESTRATION_AGENTS.summary,
   ];
   const skippedAgents = [];
@@ -50,7 +54,7 @@ export function buildExecutionPlan({
   if (shouldPlanArchitectureAgent({ analysis, riskScore, reviewDepth })) {
     insertBefore(
       requiredAgents,
-      ORCHESTRATION_AGENTS.summary,
+      ORCHESTRATION_AGENTS.riskIntelligence,
       ORCHESTRATION_AGENTS.architecture
     );
   }
@@ -194,7 +198,7 @@ function buildParallelBranches({ options }) {
 
 function addRequiredAgent(plan, agentName) {
   if (!plan.requiredAgents.includes(agentName)) {
-    insertBefore(plan.requiredAgents, ORCHESTRATION_AGENTS.summary, agentName);
+    insertBefore(plan.requiredAgents, ORCHESTRATION_AGENTS.riskIntelligence, agentName);
   }
 }
 
@@ -230,6 +234,8 @@ function orderAgents(agentNames) {
     ORCHESTRATION_AGENTS.rule,
     ORCHESTRATION_AGENTS.review,
     ORCHESTRATION_AGENTS.architecture,
+    ORCHESTRATION_AGENTS.riskIntelligence,
+    ORCHESTRATION_AGENTS.smartReview,
     ORCHESTRATION_AGENTS.summary,
   ];
 

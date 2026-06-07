@@ -45,6 +45,7 @@ export async function architectureAgent(state) {
   return {
     architectureAnalysis,
     riskScore,
+    routingRiskScore: riskScore,
     executionMetadata: buildAgentExecutionMetadata({
       agentName: 'architecture_agent',
       startedAt,

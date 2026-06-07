@@ -111,11 +111,16 @@ class ChromaVectorStoreService {
       include: ['documents', 'metadatas', 'distances'],
     });
 
-    return (result.rows()[0] || []).map(row => ({
-      id: row.id,
-      document: row.document,
-      metadata: row.metadata,
-      distance: row.distance,
+    const ids = result.ids?.[0] || [];
+    const documents = result.documents?.[0] || [];
+    const metadatas = result.metadatas?.[0] || [];
+    const distances = result.distances?.[0] || [];
+
+    return ids.map((id, i) => ({
+      id,
+      document: documents[i] || '',
+      metadata: metadatas[i] || {},
+      distance: distances[i] !== undefined ? distances[i] : null,
     }));
   }
 

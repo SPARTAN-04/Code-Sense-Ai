@@ -7,8 +7,10 @@ import { buildAgentExecutionMetadata } from '../utils/execution-metadata.util.js
 
 export async function riskSummaryAgent(state) {
   const startedAt = new Date();
-  const severity = aggregateSeverity(state);
-  const confidence = aggregateConfidence(state);
+  const severity = state.severity || aggregateSeverity(state);
+  const confidence = Number.isFinite(state.confidence)
+    ? state.confidence
+    : aggregateConfidence(state);
   const reviewSummary = buildReviewSummary({
     state,
     severity,
@@ -17,8 +19,6 @@ export async function riskSummaryAgent(state) {
 
   return {
     reviewSummary,
-    severity,
-    confidence,
     executionMetadata: buildAgentExecutionMetadata({
       agentName: 'risk_summary_agent',
       startedAt,
@@ -27,7 +27,7 @@ export async function riskSummaryAgent(state) {
         confidence,
         riskScore: state.riskScore,
         reviewDepth: state.reviewDepth,
-        reviewMode: state.routeProfile?.reviewMode || 'standard',
+        reviewMode: state.reviewMode || state.routeProfile?.reviewMode || 'standard',
         architectureAnalysisRan: Boolean(state.architectureAnalysis),
       },
     }),
@@ -83,12 +83,35 @@ function buildReviewSummary({ state, severity, confidence }) {
   const affectedModules = state.affectedModules || [];
 
   return {
-    phase: 'phase-6-risk-summary',
+    phase: 'phase-8-smart-review-summary',
     generatedAt: new Date().toISOString(),
     severity,
     confidence,
     riskScore: state.riskScore,
-    reviewMode: state.routeProfile?.reviewMode || 'standard',
+    riskLevel: state.riskLevel,
+    riskExplanation: state.riskExplanation,
+    contributingFactors: state.contributingFactors || [],
+    riskFactors: state.riskFactors || [],
+    confidenceFactors: state.confidenceFactors || [],
+    affectedSystems:
+      state.architectureAnalysis?.criticalSystemsAffected ||
+      state.aiReview?.affectedSystems ||
+      [],
+    architectureImpact:
+      state.architectureAnalysis?.architecturalRisk || 'NOT_ANALYZED',
+    suggestedChanges: normalizeSuggestedChanges([
+      ...(state.aiReview?.remediationPlan || []),
+      ...(state.aiReview?.suggestedChanges || []),
+    ]),
+    reviewMode: state.reviewMode || state.routeProfile?.reviewMode || 'standard',
+    smartReview: state.smartReview,
+    prioritizedFiles: state.prioritizedFiles || [],
+    criticalFiles: state.criticalFiles || [],
+    hotspots: state.hotspots || [],
+    reviewBudget: state.reviewBudget,
+    deepReviewFiles: state.reviewBudget?.deepReview || [],
+    standardReviewFiles: state.reviewBudget?.standardReview || [],
+    lightReviewFiles: state.reviewBudget?.lightReview || [],
     reviewDepth: state.reviewDepth,
     headline: buildHeadline({
       state,
@@ -129,6 +152,25 @@ function buildReviewSummary({ state, severity, confidence }) {
       aiFindings,
     }),
   };
+}
+
+function normalizeSuggestedChanges(suggestions) {
+  return suggestions
+    .map(suggestion => {
+      if (typeof suggestion === 'string') return suggestion;
+
+      const priority = suggestion.priority ? `[${suggestion.priority}] ` : '';
+      const title = suggestion.title || 'Review suggested change';
+      const actions = Array.isArray(suggestion.actions) && suggestion.actions.length
+        ? ` Actions: ${suggestion.actions.join(' ')}`
+        : '';
+      const files = Array.isArray(suggestion.files) && suggestion.files.length
+        ? ` Files: ${suggestion.files.join(', ')}.`
+        : '';
+
+      return `${priority}${title}.${files}${actions}`.trim();
+    })
+    .filter(Boolean);
 }
 
 function buildHeadline({

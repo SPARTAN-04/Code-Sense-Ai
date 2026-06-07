@@ -15,7 +15,9 @@
     "phase4:local": "node src/scripts/analyze-local-repo-with-rules.js",
     "phase5:local": "node src/scripts/analyze-local-repo-with-ai-review.js",
     "phase6:local": "node src/scripts/analyze-local-repo-with-langgraph.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "frontend:dev": "npm run dev --prefix frontend",
+    "frontend:build": "npm run build --prefix frontend",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +31,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "mongodb": "^7.2.0",
+    "mongoose": "^9.6.3",
     "octokit": "^5.0.5"
   },
   "overrides": {

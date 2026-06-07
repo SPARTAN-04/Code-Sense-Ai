@@ -52,6 +52,7 @@ export async function reviewAgent(state) {
       aiReview,
       confidence: aiReview.confidence,
       riskScore,
+      routingRiskScore: riskScore,
       executionMetadata: buildAgentExecutionMetadata({
         agentName: 'review_agent',
         startedAt,

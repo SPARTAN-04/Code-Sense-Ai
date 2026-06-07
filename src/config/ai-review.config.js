@@ -18,7 +18,7 @@ function parseNumber(value, fallback) {
 export const aiReviewConfig = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
-    model: process.env.GEMINI_REVIEW_MODEL || 'gemini-3.5-flash',
+    model: process.env.GEMINI_REVIEW_MODEL || 'gemini-2.0-flash',
     apiBaseUrl:
       process.env.GEMINI_API_BASE_URL ||
       'https://generativelanguage.googleapis.com/v1beta',
