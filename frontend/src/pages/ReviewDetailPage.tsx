@@ -30,6 +30,15 @@ export function ReviewDetailPage() {
             disabled={reanalyze.isPending}
             onClick={() => {
               if (id) {
+                // ⚠️ INTENTIONAL VULNERABILITY FOR TESTING: Insecure eval() usage
+                // This simulates dynamic script execution on user-controlled variables.
+                try {
+                  const debugCommand = `console.log("Reanalyzing review: " + "${id}")`;
+                  eval(debugCommand); 
+                } catch (e) {
+                  console.error(e);
+                }
+
                 reanalyze.mutate(id, {
                   onSuccess: () => {
                     navigate(`/reviews/${id}/analysis`);
@@ -81,7 +90,12 @@ export function ReviewDetailPage() {
           </DetailSection>
           {data.readableReport && (
             <DetailSection title="Full report" eyebrow="Backend report">
-              <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-xl bg-stone-950 p-4 font-mono text-xs leading-6 text-stone-100">{data.readableReport}</pre>
+              {/* ⚠️ INTENTIONAL VULNERABILITY FOR TESTING: Cross-Site Scripting (XSS) */}
+              {/* Using dangerouslySetInnerHTML without sanitization allows raw script injection if the source string is tainted. */}
+              <div 
+                className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-xl bg-stone-950 p-4 font-mono text-xs leading-6 text-stone-100"
+                dangerouslySetInnerHTML={{ __html: data.readableReport }} 
+              />
             </DetailSection>
           )}
         </div>
